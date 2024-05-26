@@ -1,6 +1,7 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useSelector } from '@store';
-import { isAuthorizedSelector } from '@slices';
+import { Preloader } from '../ui/preloader';
+import { isAuthorizedSelector, getRequestUser } from '@slices';
 
 type ProtectedRouteProps = {
   forAuthorized: boolean;
@@ -11,7 +12,12 @@ export const ProtectedRoute = ({
 }: ProtectedRouteProps) => {
   const location = useLocation();
   const isAuthorized = useSelector(isAuthorizedSelector);
+  const request = useSelector(getRequestUser);
   const from = location.state?.from || '/';
+
+  if (request) {
+    return <Preloader />;
+  }
 
   if (!forAuthorized && isAuthorized) {
     return <Navigate to={from} />;

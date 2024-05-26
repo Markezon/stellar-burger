@@ -1,21 +1,20 @@
-import { FC, memo, useEffect, useState } from 'react';
+import { FC, memo, useMemo, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 
 import { TModalProps } from './type';
 import { ModalUI } from '@ui';
-import { useLocation } from 'react-router-dom';
+import { useMatch } from 'react-router-dom';
 
 const modalRoot = document.getElementById('modals');
 
 export const Modal: FC<TModalProps> = memo(({ title, onClose, children }) => {
-  const location = useLocation();
-  const [titleStyle, setTitleStyle] = useState('text_type_main-large');
+  const isFeedOrProfile = useMatch('/feed|profile');
 
-  useEffect(() => {
-    if (/feed|profile/i.test(location.pathname)) {
-      setTitleStyle('text_type_digits-default');
-    }
-  });
+  const titleStyle = useMemo(
+    () =>
+      isFeedOrProfile ? 'text_type_digits-default' : 'text_type_main-large',
+    [isFeedOrProfile]
+  );
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {

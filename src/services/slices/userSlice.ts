@@ -29,19 +29,34 @@ const initialState: UserState = {
 
 export const loginUserThunk = createAsyncThunk(
   'user/login',
-  (loginData: TLoginData) => loginUserApi(loginData)
+  async (data: TLoginData) =>
+    loginUserApi(data).then((data) => {
+      setCookie('accessToken', data.accessToken);
+      localStorage.setItem('refreshToken', data.refreshToken);
+      return data.user;
+    })
 );
 
 export const registerUserThunk = createAsyncThunk(
   'user/register',
-  (registerData: TRegisterData) => registerUserApi(registerData)
+  async (data: TRegisterData) =>
+    registerUserApi(data).then((data) => {
+      setCookie('accessToken', data.accessToken);
+      localStorage.setItem('refreshToken', data.refreshToken);
+      return data.user;
+    })
 );
 
-export const logoutUserThunk = createAsyncThunk('user/logout', logoutApi);
+export const logoutUserThunk = createAsyncThunk('user/logout', async () =>
+  logoutApi().then(() => {
+    deleteCookie('accessToken');
+    localStorage.removeItem('refreshToken');
+  })
+);
 
 export const updateUserThunk = createAsyncThunk(
-  'user/update',
-  (user: Partial<TRegisterData>) => updateUserApi(user)
+  'user/updater',
+  async (data: Partial<TRegisterData>) => updateUserApi(data)
 );
 
 export const forgotPasswordThunk = createAsyncThunk(
@@ -54,7 +69,9 @@ export const resetPasswordThunk = createAsyncThunk(
   (data: { password: string; token: string }) => resetPasswordApi(data)
 );
 
-export const getUserThunk = createAsyncThunk('user/get', getUserApi);
+export const getUserThunk = createAsyncThunk('user/get', async () =>
+  getUserApi()
+);
 
 export const userSlice = createSlice({
   name: 'user',
@@ -65,6 +82,7 @@ export const userSlice = createSlice({
     }
   },
   selectors: {
+    getRequestUser: (state) => state.isLoadong,
     getUserStateSelector: (state) => state,
     getUserSelector: (state) => state.user,
     isAuthorizedSelector: (state) => state.isAuthorized,
@@ -80,13 +98,11 @@ export const userSlice = createSlice({
         state.isLoadong = false;
         state.error = error.message as string;
       })
-      .addCase(loginUserThunk.fulfilled, (state, { payload }) => {
+      .addCase(loginUserThunk.fulfilled, (state, action) => {
         state.isLoadong = false;
         state.error = null;
-        state.user = payload.user;
+        state.user = action.payload;
         state.isAuthorized = true;
-        setCookie('accessToken', payload.accessToken);
-        localStorage.setItem('refreshToken', payload.refreshToken);
       })
       .addCase(registerUserThunk.pending, (state) => {
         state.isLoadong = true;
@@ -96,13 +112,11 @@ export const userSlice = createSlice({
         state.isLoadong = false;
         state.error = error.message as string;
       })
-      .addCase(registerUserThunk.fulfilled, (state, { payload }) => {
+      .addCase(registerUserThunk.fulfilled, (state, action) => {
         state.isLoadong = false;
         state.error = null;
-        state.user = payload.user;
+        state.user = action.payload;
         state.isAuthorized = true;
-        setCookie('accessToken', payload.accessToken);
-        localStorage.setItem('refreshToken', payload.refreshToken);
       })
       .addCase(logoutUserThunk.pending, (state) => {
         state.isLoadong = true;
@@ -112,13 +126,11 @@ export const userSlice = createSlice({
         state.isLoadong = false;
         state.error = error.message as string;
       })
-      .addCase(logoutUserThunk.fulfilled, (state, { payload }) => {
+      .addCase(logoutUserThunk.fulfilled, (state) => {
         state.isLoadong = false;
         state.error = null;
         state.user = null;
         state.isAuthorized = false;
-        deleteCookie('accessToken');
-        localStorage.removeItem('refreshToken');
       })
       .addCase(updateUserThunk.pending, (state) => {
         state.isLoadong = true;
@@ -175,6 +187,7 @@ export const userSlice = createSlice({
 });
 export const { clearUserError } = userSlice.actions;
 export const {
+  getRequestUser,
   getUserStateSelector,
   getUserSelector,
   isAuthorizedSelector,
