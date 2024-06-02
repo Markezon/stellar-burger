@@ -2,7 +2,7 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { getFeedsApi, getOrdersApi } from '@api';
 import { TOrder } from '@utils-types';
 
-interface feedState {
+export interface feedState {
   isLoading: boolean;
   orders: TOrder[];
   total: number;
@@ -66,6 +66,7 @@ const feedSlice = createSlice({
   }
 });
 
+export { initialState as feedInitialState };
 export const { getFeedStateSelector, getOrdersSelector } = feedSlice.selectors;
 
 export default feedSlice.reducer;

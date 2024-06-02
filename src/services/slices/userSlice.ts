@@ -29,34 +29,33 @@ const initialState: UserState = {
 
 export const loginUserThunk = createAsyncThunk(
   'user/login',
-  async (data: TLoginData) =>
-    loginUserApi(data).then((data) => {
-      setCookie('accessToken', data.accessToken);
-      localStorage.setItem('refreshToken', data.refreshToken);
-      return data.user;
-    })
+  async (loginData: TLoginData) => {
+    const response = await loginUserApi(loginData);
+    setCookie('accessToken', response.accessToken);
+    localStorage.setItem('refreshToken', response.refreshToken);
+    return response;
+  }
 );
 
 export const registerUserThunk = createAsyncThunk(
   'user/register',
-  async (data: TRegisterData) =>
-    registerUserApi(data).then((data) => {
-      setCookie('accessToken', data.accessToken);
-      localStorage.setItem('refreshToken', data.refreshToken);
-      return data.user;
-    })
+  async (registerData: TRegisterData) => {
+    const response = await registerUserApi(registerData);
+    setCookie('accessToken', response.accessToken);
+    localStorage.setItem('refreshToken', response.refreshToken);
+    return response;
+  }
 );
 
-export const logoutUserThunk = createAsyncThunk('user/logout', async () =>
-  logoutApi().then(() => {
-    deleteCookie('accessToken');
-    localStorage.removeItem('refreshToken');
-  })
-);
+export const logoutUserThunk = createAsyncThunk('user/logout', async () => {
+  await logoutApi();
+  deleteCookie('accessToken');
+  localStorage.removeItem('refreshToken');
+});
 
 export const updateUserThunk = createAsyncThunk(
-  'user/updater',
-  async (data: Partial<TRegisterData>) => updateUserApi(data)
+  'user/update',
+  (user: Partial<TRegisterData>) => updateUserApi(user)
 );
 
 export const forgotPasswordThunk = createAsyncThunk(
@@ -69,9 +68,7 @@ export const resetPasswordThunk = createAsyncThunk(
   (data: { password: string; token: string }) => resetPasswordApi(data)
 );
 
-export const getUserThunk = createAsyncThunk('user/get', async () =>
-  getUserApi()
-);
+export const getUserThunk = createAsyncThunk('user/get', getUserApi);
 
 export const userSlice = createSlice({
   name: 'user',
@@ -98,10 +95,10 @@ export const userSlice = createSlice({
         state.isLoadong = false;
         state.error = error.message as string;
       })
-      .addCase(loginUserThunk.fulfilled, (state, action) => {
+      .addCase(loginUserThunk.fulfilled, (state, { payload }) => {
         state.isLoadong = false;
         state.error = null;
-        state.user = action.payload;
+        state.user = payload.user;
         state.isAuthorized = true;
       })
       .addCase(registerUserThunk.pending, (state) => {
@@ -112,10 +109,10 @@ export const userSlice = createSlice({
         state.isLoadong = false;
         state.error = error.message as string;
       })
-      .addCase(registerUserThunk.fulfilled, (state, action) => {
+      .addCase(registerUserThunk.fulfilled, (state, { payload }) => {
         state.isLoadong = false;
         state.error = null;
-        state.user = action.payload;
+        state.user = payload.user;
         state.isAuthorized = true;
       })
       .addCase(logoutUserThunk.pending, (state) => {
@@ -126,7 +123,7 @@ export const userSlice = createSlice({
         state.isLoadong = false;
         state.error = error.message as string;
       })
-      .addCase(logoutUserThunk.fulfilled, (state) => {
+      .addCase(logoutUserThunk.fulfilled, (state, { payload }) => {
         state.isLoadong = false;
         state.error = null;
         state.user = null;
@@ -144,6 +141,7 @@ export const userSlice = createSlice({
         state.isLoadong = false;
         state.error = null;
         state.user = payload.user;
+        state.isAuthorized = true;
       })
       .addCase(forgotPasswordThunk.pending, (state) => {
         state.isLoadong = true;
@@ -185,6 +183,7 @@ export const userSlice = createSlice({
       });
   }
 });
+export { initialState as userInitialState };
 export const { clearUserError } = userSlice.actions;
 export const {
   getRequestUser,

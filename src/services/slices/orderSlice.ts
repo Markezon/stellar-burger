@@ -2,7 +2,7 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { getOrderByNumberApi } from '@api';
 import { TOrder } from '@utils-types';
 
-interface OrderState {
+export interface OrderState {
   isLoading: boolean;
   order: TOrder | null;
   error: string | null;
@@ -44,6 +44,7 @@ const orderSlice = createSlice({
   }
 });
 
+export { initialState as orderInitialState };
 export const { getOrderSelector } = orderSlice.selectors;
 
 export default orderSlice.reducer;
