@@ -1,4 +1,4 @@
-/* import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import {
   registerUserApi,
   loginUserApi,
@@ -29,34 +29,33 @@ const initialState: UserState = {
 
 export const loginUserThunk = createAsyncThunk(
   'user/login',
-  async (data: TLoginData) =>
-    loginUserApi(data).then((data) => {
-      setCookie('accessToken', data.accessToken);
-      localStorage.setItem('refreshToken', data.refreshToken);
-      return data.user;
-    })
+  async (loginData: TLoginData) => {
+    const response = await loginUserApi(loginData);
+    setCookie('accessToken', response.accessToken);
+    localStorage.setItem('refreshToken', response.refreshToken);
+    return response;
+  }
 );
 
 export const registerUserThunk = createAsyncThunk(
   'user/register',
-  async (data: TRegisterData) =>
-    registerUserApi(data).then((data) => {
-      setCookie('accessToken', data.accessToken);
-      localStorage.setItem('refreshToken', data.refreshToken);
-      return data.user;
-    })
+  async (registerData: TRegisterData) => {
+    const response = await registerUserApi(registerData);
+    setCookie('accessToken', response.accessToken);
+    localStorage.setItem('refreshToken', response.refreshToken);
+    return response;
+  }
 );
 
-export const logoutUserThunk = createAsyncThunk('user/logout', async () =>
-  logoutApi().then(() => {
-    deleteCookie('accessToken');
-    localStorage.removeItem('refreshToken');
-  })
-);
+export const logoutUserThunk = createAsyncThunk('user/logout', async () => {
+  await logoutApi();
+  deleteCookie('accessToken');
+  localStorage.removeItem('refreshToken');
+});
 
 export const updateUserThunk = createAsyncThunk(
-  'user/updater',
-  async (data: Partial<TRegisterData>) => updateUserApi(data)
+  'user/update',
+  (user: Partial<TRegisterData>) => updateUserApi(user)
 );
 
 export const forgotPasswordThunk = createAsyncThunk(
@@ -69,9 +68,7 @@ export const resetPasswordThunk = createAsyncThunk(
   (data: { password: string; token: string }) => resetPasswordApi(data)
 );
 
-export const getUserThunk = createAsyncThunk('user/get', async () =>
-  getUserApi()
-);
+export const getUserThunk = createAsyncThunk('user/get', getUserApi);
 
 export const userSlice = createSlice({
   name: 'user',
@@ -98,10 +95,10 @@ export const userSlice = createSlice({
         state.isLoadong = false;
         state.error = error.message as string;
       })
-      .addCase(loginUserThunk.fulfilled, (state, action) => {
+      .addCase(loginUserThunk.fulfilled, (state, { payload }) => {
         state.isLoadong = false;
         state.error = null;
-        state.user = action.payload;
+        state.user = payload.user;
         state.isAuthorized = true;
       })
       .addCase(registerUserThunk.pending, (state) => {
@@ -112,10 +109,10 @@ export const userSlice = createSlice({
         state.isLoadong = false;
         state.error = error.message as string;
       })
-      .addCase(registerUserThunk.fulfilled, (state, action) => {
+      .addCase(registerUserThunk.fulfilled, (state, { payload }) => {
         state.isLoadong = false;
         state.error = null;
-        state.user = action.payload;
+        state.user = payload.user;
         state.isAuthorized = true;
       })
       .addCase(logoutUserThunk.pending, (state) => {
@@ -126,7 +123,7 @@ export const userSlice = createSlice({
         state.isLoadong = false;
         state.error = error.message as string;
       })
-      .addCase(logoutUserThunk.fulfilled, (state) => {
+      .addCase(logoutUserThunk.fulfilled, (state, { payload }) => {
         state.isLoadong = false;
         state.error = null;
         state.user = null;
@@ -144,6 +141,7 @@ export const userSlice = createSlice({
         state.isLoadong = false;
         state.error = null;
         state.user = payload.user;
+        state.isAuthorized = true;
       })
       .addCase(forgotPasswordThunk.pending, (state) => {
         state.isLoadong = true;
@@ -185,6 +183,7 @@ export const userSlice = createSlice({
       });
   }
 });
+export { initialState as userInitialState };
 export const { clearUserError } = userSlice.actions;
 export const {
   getRequestUser,
@@ -194,218 +193,4 @@ export const {
   getUserErrorSelector
 } = userSlice.selectors;
 
-export default userSlice.reducer;
- */
-
-import {
-  TLoginData,
-  TRegisterData,
-  getOrdersApi,
-  getUserApi,
-  loginUserApi,
-  logoutApi,
-  registerUserApi,
-  updateUserApi
-} from '@api';
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import { TOrder, TUser } from '../../utils/types';
-import { deleteCookie, setCookie } from '../../utils/cookie';
-
-/**
- * Асинхронно авторизуемся
- * @param data Логин и пароль для авторизации
- */
-export const loginUserThunk = createAsyncThunk(
-  'users/loginUser',
-  async (data: TLoginData) =>
-    loginUserApi(data).then((data) => {
-      setCookie('accessToken', data.accessToken);
-      localStorage.setItem('refreshToken', data.refreshToken);
-      return data.user;
-    })
-);
-
-/**
- * Асинхронно снимаем авторизацию
- */
-export const logoutUserThunk = createAsyncThunk('users/logoutUser', async () =>
-  logoutApi().then(() => {
-    deleteCookie('accessToken');
-    localStorage.removeItem('refreshToken');
-  })
-);
-
-/**
- * Асинхронно подгружаем данные пользователя
- */
-export const getUserThunk = createAsyncThunk('users/getUser', async () =>
-  getUserApi()
-);
-
-/**
- * Асинхронно регистрируем пользователя на сервере
- * @param data Имя, логин и пароль пользователя
- */
-export const registerUserThunk = createAsyncThunk(
-  'users/registerUser',
-  async (data: TRegisterData) =>
-    registerUserApi(data).then((data) => {
-      setCookie('accessToken', data.accessToken);
-      localStorage.setItem('refreshToken', data.refreshToken);
-      return data.user;
-    })
-);
-
-/**
- * Асинхронно обновляем данные пользователя
- * @param data Обновлённые имя, логин и пароль пользователя
- */
-export const updateUserThunk = createAsyncThunk(
-  'users/updateUser',
-  async (data: Partial<TRegisterData>) => updateUserApi(data)
-);
-
-/**
- * Асинхронно подгружаем историю заказов пользователя
- */
-export const getOrdersThunk = createAsyncThunk(
-  'users/getUserOrders',
-  async () => getOrdersApi()
-);
-
-export interface UserState {
-  isAuthenticated: boolean;
-  loginUserRequest: boolean;
-  user: TUser | null;
-  orders: TOrder[];
-  ordersRequest: boolean;
-  error: string | null;
-}
-
-const initialState: UserState = {
-  isAuthenticated: false,
-  loginUserRequest: false,
-  user: null,
-  orders: [],
-  ordersRequest: false,
-  error: null
-};
-
-const userSlice = createSlice({
-  name: 'user',
-  initialState,
-  selectors: {
-    isAuthCheckedSelector: (state) => state.isAuthenticated,
-    loginUserRequestSelector: (state) => state.loginUserRequest,
-    userNameSelector: (state) => state.user?.name || '',
-    userEmailSelector: (state) => state.user?.email || '',
-    userSelector: (state) => state.user,
-
-    userOrdersSelector: (state) => state.orders,
-    ordersRequestSelector: (state) => state.orders,
-
-    errorSelector: (state) => state.error
-  },
-  reducers: {
-    clearErrors: (state) => {
-      state.error = null;
-    }
-  },
-  extraReducers(builder) {
-    builder
-      // Авторизуемся
-      .addCase(loginUserThunk.pending, (state) => {
-        state.loginUserRequest = true;
-        state.error = null;
-      })
-      .addCase(loginUserThunk.rejected, (state, action) => {
-        state.loginUserRequest = false;
-        state.error = action.error.message!;
-      })
-      .addCase(loginUserThunk.fulfilled, (state, action) => {
-        state.user = action.payload;
-        state.loginUserRequest = false;
-        state.isAuthenticated = true;
-      })
-
-      // Снимаем авторизацию
-      .addCase(logoutUserThunk.pending, (state) => {
-        state.user = null;
-        state.loginUserRequest = false;
-        state.isAuthenticated = false;
-      })
-
-      // Подгружаем данные пользователя
-      .addCase(getUserThunk.pending, (state) => {
-        state.loginUserRequest = true;
-      })
-      .addCase(getUserThunk.rejected, (state, action) => {
-        state.user = null;
-        state.loginUserRequest = false;
-        state.error = action.error.message!;
-      })
-      .addCase(getUserThunk.fulfilled, (state, action) => {
-        state.user = action.payload.user;
-        state.loginUserRequest = false;
-        state.isAuthenticated = true;
-      })
-
-      // Регистрируем пользователя на сервере
-      .addCase(registerUserThunk.pending, (state) => {
-        state.isAuthenticated = false;
-        state.loginUserRequest = true;
-      })
-      .addCase(registerUserThunk.rejected, (state, action) => {
-        state.isAuthenticated = false;
-        state.loginUserRequest = false;
-        state.error = action.error.message!;
-      })
-      .addCase(registerUserThunk.fulfilled, (state, action) => {
-        state.user = action.payload;
-        state.loginUserRequest = false;
-        state.isAuthenticated = true;
-      })
-
-      // Обновляем данные пользователя
-      .addCase(updateUserThunk.pending, (state) => {
-        state.loginUserRequest = true;
-      })
-      .addCase(updateUserThunk.rejected, (state, action) => {
-        state.loginUserRequest = false;
-        state.error = action.error.message!;
-      })
-      .addCase(updateUserThunk.fulfilled, (state, action) => {
-        state.user = action.payload.user;
-        state.loginUserRequest = false;
-        state.isAuthenticated = true;
-      })
-
-      // Подгружаем историю заказов пользователя
-      .addCase(getOrdersThunk.pending, (state) => {
-        state.ordersRequest = true;
-      })
-      .addCase(getOrdersThunk.rejected, (state, action) => {
-        state.error = action.error.message!;
-        state.ordersRequest = false;
-      })
-      .addCase(getOrdersThunk.fulfilled, (state, action) => {
-        state.orders = action.payload;
-        state.ordersRequest = false;
-      });
-  }
-});
-
-export const { clearErrors } = userSlice.actions;
-export const {
-  isAuthCheckedSelector,
-  userNameSelector,
-  userEmailSelector,
-  userSelector,
-  loginUserRequestSelector,
-
-  userOrdersSelector,
-  ordersRequestSelector,
-
-  errorSelector
-} = userSlice.selectors;
 export default userSlice.reducer;
